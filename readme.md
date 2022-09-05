@@ -187,6 +187,80 @@ seriaVersionUID 序列号
 ```
 transient 关键字修饰词 变量被修饰化后，不会被序列化显示到文件中
 
+### 3.5.1 Properties 对象
+
+9.6 3:00
+
+Properties 是一个map集合
+
+Properties 中有和io相关的方法
+
+![](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209060305904.png)
+
+**作为map集合来使用**
+
+```java
+        //关于properties用于map的方法
+        Properties pron = new Properties();
+
+        // 写入
+        pron.put("学生","老师");
+        pron.put("工人","领导");
+        //删除
+        pron.remove("工人");
+        //修改 使用put方法
+        pron.put("学生","大学生");
+        //查询
+        pron.get("学生");
+
+        // 两种遍历方式
+        Set<Object> objects = pron.keySet();
+        for (Object key : objects) {
+            System.out.println(key);
+            System.out.println(pron.get(key));
+        }
+        // 获取 键值对
+
+        Set<Map.Entry<Object, Object>> entries = pron.entrySet();
+        for (Map.Entry<Object, Object> entry : entries) {
+            Object value = entry.getValue();
+            Object key = entry.getKey();
+            System.out.println(key +" = "+value);
+        }
+    }
+}
+```
+
+### 3.5.2 Properties 对象关于 io的操作
+
+![image-20220906033305789](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209060333875.png)
+
+**存储和读取**
+
+```java
+        //先 读取 properties
+        Properties pron = new Properties();
+        FileReader fr = new FileReader("study/prop.properties");
+        pron.load(fr);
+        System.out.println(pron);
+        fr.close();
+        // 再写入
+
+        pron.put("sex","男");
+        pron.put("age","18");
+        FileWriter fw = new FileWriter("study/prop.properties");
+        pron.store(fw,"个人信息");
+        fw.close();
+```
 
 
-杀杀杀
+
+# 4. 多线程&网络编程&基础加强（9.6）
+
+## 4.1  多线程
+
+### 4.1.1  并发和并行
+
+![image-20220906041945214](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209060419276.png)
+
+![image-20220906042216445](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209060422517.png)
