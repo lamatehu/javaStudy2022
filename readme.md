@@ -186,3 +186,7 @@ seriaVersionUID 序列号
     private static final long seriaVersionUID
 ```
 transient 关键字修饰词 变量被修饰化后，不会被序列化显示到文件中
+
+
+
+杀杀杀
