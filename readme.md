@@ -33,6 +33,8 @@ interface TwoNumberAdd{
 
 ```
 
+# 3.文件传输流
+
 ##  3.1 stream 流
 
 ### 8.30
@@ -753,6 +755,833 @@ public static void main(String[] args) throws IOException {
         System.out.println(new String(data));
 ```
 
-### 4.3.4 Tcp 通信原理
+### 4.3.4 Tcp 通信原理（9.11）
 
 ![image-20220910064536958](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209100645049.png)
+
+#### 三次握手
+
+![image-20220911052327519](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209110523609.png)
+
+#### 四次挥手
+
+![image-20220911052531177](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209110525271.png)
+
+
+
+
+
+### 4.3.5 Tcp服务端与客户端的发送与接收
+
+![image-20220911043148562](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209110431643.png)
+
+![image-20220911052034254](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209110520358.png)
+
+```java
+//客户端        
+Socket socket = new Socket("127.0.0.1", 54000);
+        OutputStream outputStream = socket.getOutputStream();
+        String aa = "aaa";
+        outputStream.write(aa.getBytes());
+        outputStream.close();
+        socket.close();
+
+```
+
+```java
+//服务端
+        ServerSocket serverSocket = new ServerSocket(54000);
+        Socket accept = serverSocket.accept();
+        InputStream inputStream = accept.getInputStream();
+        byte[] bytes = new byte[1024];
+        int b;
+
+        while((b = inputStream.read()) !=-1){
+            System.out.print((char) b);
+        }
+        inputStream.close();
+        serverSocket.close();
+```
+
+### 4.3.6 文件传输和中文传输
+
+文件传输有几个步骤
+
+- 首先先在客户端拿到文件的数据
+- 把这个数据发送到服务器上
+- 接受是否成功的消息
+
+服务端
+
+- 接受客户端的数据
+- 把客户端的数据存入到本地文件中
+- 发送消息通知客户端
+
+```java
+        //	文件传输客户端
+		FileInputStream fileInputStream = new FileInputStream("study/img/IMG_20200530_152020.jpg");
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+
+        Socket socket = new Socket("127.0.0.1", 58888);
+        OutputStream outputStream = socket.getOutputStream();
+        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
+        int b;
+        while ((b = bufferedInputStream.read()) != -1){
+            bufferedOutputStream.write(b);
+        }
+        socket.shutdownOutput();
+        InputStream inputStream = socket.getInputStream();
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        String aa;
+        while ((aa = bufferedReader.readLine())!=null){
+            System.out.println(aa);
+        }
+        socket.shutdownInput();
+		socket.close();
+
+```
+
+```java
+//文件传输服务端
+        ServerSocket serverSocket = new ServerSocket(58888);
+        Socket accept = serverSocket.accept();
+        InputStream inputStream = accept.getInputStream();
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+
+
+        FileOutputStream fileOutputStream = new FileOutputStream("study/copy/1.jpg");
+        BufferedOutputStream bos = new BufferedOutputStream(fileOutputStream);
+        int aa;
+        while ((aa = bufferedInputStream.read()) != -1){
+            bos.write(aa);
+        }
+        accept.shutdownInput();
+
+        OutputStream outputStream = accept.getOutputStream();
+        outputStream.write("已完成".getBytes());
+        accept.shutdownOutput();
+		socket.close();
+```
+
+### 4.3.7 Tcp服务的优化 （9.12）
+
+1. 第一个弊端就是服务器只能响应一次，这个时候用while循环既可以一直接收文件
+2. 第二个弊端是每次上传的文件都会把上一个文件覆盖掉，这个时候使用随机生成的文件名（**uuid**）
+3. 第三个弊端是每次只能连接一个客户端，无法同时处理一个客户端。同时处理多个客户端 用多线程
+4. 第四个弊端是使用多线程会让资源消耗太多，这个时候用一个线程池代替 **ThreadPool**
+
+#### UUID
+
+```java
+//获取一个uuid
+String s = UUID.randomUUID().toString().replace("-","");
+```
+
+#### 多线程
+
+```java
+//main
+public class serverDemo {
+    public static void main(String[] args) throws IOException {
+        // 创建连接
+        ServerSocket ss = new ServerSocket(54200);
+        while (true) {
+            Socket accept = ss.accept();
+            ThreadSocket threadSocket = new ThreadSocket(accept);
+            new Thread(threadSocket).start();
+        }
+//        ss.close();
+    }
+```
+
+
+
+```java
+//server Thread
+public class ThreadSocket implements Runnable {
+    private final Socket accept;
+
+    public ThreadSocket(Socket accept) {
+        this.accept = accept;
+    }
+
+    @Override
+    public void run() {
+        BufferedOutputStream bos = null;
+
+        try {
+            BufferedInputStream bis = new BufferedInputStream(accept.getInputStream());
+
+            //自动将文件重命名 uuid
+            String s = UUID.randomUUID().toString().replace("-", "");
+
+             bos = new BufferedOutputStream(new FileOutputStream("study/copy/" + s + ".jpg"));
+
+
+            int aa;
+            while ((aa = bis.read()) != -1) {
+                bos.write(aa);
+            }
+            //传输成功候关闭连接
+            accept.shutdownInput();
+
+
+            //传输接受成功的信息
+            System.out.println("开始传输信息");
+            OutputStream outputStream = accept.getOutputStream();
+            outputStream.write("传输成功".getBytes());
+            accept.shutdownOutput();
+
+            System.out.println("传输完成");
+        }catch (IOException e){
+            e.printStackTrace();
+        }finally {
+            //关闭连接
+            if (bos != null){
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (accept != null){
+                try {
+                    accept.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+```
+
+
+
+
+
+#### 线程池
+
+其他代码上同
+
+```java
+    public static void main(String[] args) throws IOException {
+
+        //创建线程池
+        ThreadPoolExecutor tpe = new ThreadPoolExecutor(2, //核心线程
+                5, //最大线程
+                1, //线程存在时间
+                TimeUnit.MINUTES, //线程时间单位
+                new ArrayBlockingQueue<>(5),//阻塞队列
+                Executors.defaultThreadFactory(),   //创建线程方式
+                new ThreadPoolExecutor.AbortPolicy());  //任务拒绝策略
+        // 创建连接
+        ServerSocket ss = new ServerSocket(54200);
+        while (true) {
+            Socket accept = ss.accept();
+            //使用线程池
+            tpe.submit(new ThreadSocket(accept));
+        }
+//        ss.close();
+
+
+
+    }
+```
+
+
+
+
+
+---
+
+## 4.4 日志
+
+### 4.4.1  什么是日志
+
+#### 输出语句的弊端
+
+![image-20220912065057207](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209120651392.png)
+
+#### 日志与输出语句的区别
+
+![image-20220912065153522](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209120651658.png)
+
+#### 日志的优点
+
+![image-20220912065350662](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209120653751.png)
+
+
+
+#### 日志的两个体系结构
+
+![image-20220912065600314](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209120656443.png)
+
+---
+
+### 4.4.2 LogBack 介绍与使用
+
+- logback-core: 该模块为其他两个模块提供基础的代码，必须有
+- logback-classic: 完整实现了slf4j API模块。
+- logback-access 模块与Tomcat 和 Jetty 等 Servlet容器集成，提供HTTP 访问日志的功能
+
+#### Logback 快速入门
+
+![image-20220912174411935](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209121744060.png)
+
+```java
+public class Demo1 {
+    //导入logback
+    private static final Logger LOGGER = LoggerFactory.getLogger(Demo1.class);
+    public static void main(String[] args) {
+        System.out.println("aaa");
+        Scanner sc = new Scanner(System.in);
+        String next = sc.next();
+        LOGGER.info("用户输入的是"+next);
+
+    }
+}
+
+```
+
+```java
+//logback配置文件 可能有问题
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径-->
+    <property name="LOG_HOME" value="/home" />
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <!-- 按照每天生成日志文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} -%msg%n</pattern>
+            <charset>utf-8</charset>
+        </encoder>
+        <file>D:/limenyUan/haha.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--日志文件输出的文件名-->
+            <FileNamePattern>D:/limenyUan/TestWeb.log.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <MaxFileSize>1MB</MaxFileSize>
+        </rollingPolicy>
+        <!--日志文件最大的大小-->
+    </appender>
+
+    <!-- 日志输出级别 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>
+```
+
+
+
+## 4.5 . 枚举
+
+####  定义一个枚举类（enum）
+
+
+
+#### 枚举的特点
+
+![image-20220912180630869](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209121806971.png)
+
+```java
+public enum sesson {
+    Spring("春"){
+        @Override
+        public void show() {
+            System.out.println(Spring.name+"你好春天");
+        }
+    },Winter("冬"){
+        @Override
+        public void show() {
+            System.out.println(Winter.name+"你好冬天");
+        }
+    },Autumn("秋"){
+        @Override
+        public void show() {
+            System.out.println(Autumn.name+"你好秋");
+        }
+    },Summer("夏"){
+        @Override
+        public void show() {
+            System.out.println(Summer.name+"你好夏天");
+        }
+    };
+    private sesson(){
+
+    }
+    private sesson(String name){
+        name = this.name();
+    }
+    private String name;
+
+    public abstract void show();
+}
+```
+
+#### 枚举的方法
+
+![](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209121834418.png)
+
+```java
+        //name 打印名称
+        System.out.println(sesson.Summer.name());
+        //获取枚举索引
+        int ordinal = sesson.Winter.ordinal();
+        //比较两者的索引差值
+        int i = sesson.Autumn.compareTo(sesson.Summer);
+        //打印
+        String s = sesson.Autumn.toString();
+        System.out.println(s);
+        //通过类加载的方式获得对象
+        sesson autume = Enum.valueOf(sesson.class, "Autumn");
+        System.out.println(autume.name());
+        //获取枚举类的所有对象
+        sesson[] values = sesson.values();
+        for (int i1 = 0; i1 < values.length; i1++) {
+            System.out.println(values[i1].name());
+        }
+    }
+```
+
+----
+
+## 
+
+# 5.类加载器（9.13）
+
+## 5.1 类加载器
+
+![image-20220913045727053](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130457172.png)
+
+把class文件加载到内存中
+
+### 类加载的时机
+
+1. 创建类的实例
+2. 调用类的类方法
+3. 访问类或者接口的类变量，或者为该类的变量赋值
+4. 使用放射或者强制创建某个类或者对应的java.lang.Class对象
+5. 初始化某个类的子类
+6. 直接使用java.exe 运行某个子类
+
+### 类加载的过程
+
+![image-20220913050509498](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130505612.png)
+
+![image-20220913050932496](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130509622.png)
+
+![image-20220913051028618](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130510734.png)
+
+### 类加载器的分类
+
+![image-20220913051644302](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130516438.png)
+
+### 双亲委派模型
+
+所有的加载请求都会到启动类加载器中
+
+![image-20220913052046396](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130520504.png)
+
+```java
+    public static void main(String[] args) {
+        //系统类加载器
+        ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+        //平台类加载器
+        ClassLoader parent = systemClassLoader.getParent();
+        //启动类加载器
+        ClassLoader parent1 = parent.getParent();
+        System.out.println(systemClassLoader);
+        System.out.println(parent);
+        System.out.println(parent1);
+```
+
+### 类加载的重要方法
+
+![image-20220913060329081](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130603186.png)
+
+```java
+        //通过类加载器来读取properties里的东西
+        ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+        InputStream resourceAsStream = systemClassLoader.getResourceAsStream("prop.properties");
+        
+        Properties ppt = new Properties();
+        ppt.load(resourceAsStream);
+        System.out.println(ppt);
+```
+
+---
+
+## 5.2 反射
+
+### 反射概述
+
+![image-20220913062600357](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130626496.png)
+
+可以无视修饰修饰符，获取类中的所有芳芳
+
+先获取到文件中的信息，动态创建对象和调用方法
+
+### 获取class对象
+
+![image-20220913063620294](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130636411.png)
+
+```java
+        //第一个通过forname加载
+        Class<?> aClass = Class.forName("com.hou.classLoaderDemo.Student");
+        System.out.println(aClass);
+        //第二种通过getclass类加载
+        Student student = new Student();
+        Class aClass1 = student.getClass();
+        System.out.println(aClass1);
+        //第三种通过类名加class来加载
+        Class<Student> studentClass = Student.class;
+        
+```
+
+### 获取构造方法
+
+```java
+    Class<?> aClass = Class.forName("com.hou.classLoaderDemo.Student");
+    //获取无参构造
+    Constructor<?> constructor = aClass.getConstructor();
+    System.out.println(constructor);
+    //获取有参构造
+    Constructor<?> constructor1 = aClass.getConstructor(String.class, String.class, String.class, String.class);
+    System.out.println(constructor1);
+    //获取构造数组
+    Constructor<?>[] constructors = aClass.getConstructors();
+    for (int i = 0; i < constructors.length; i++) {
+        System.out.println(constructors[i]);
+    }
+    //可以获取所有构造，但选一个
+    Constructor<?> declaredConstructor = aClass.getDeclaredConstructor();
+    System.out.println(declaredConstructor);
+    //获取所有构造 打包成数组
+    Constructor<?>[] declaredConstructors = aClass.getDeclaredConstructors();
+    System.out.println(declaredConstructors);
+}
+```
+
+
+
+### 创建对象
+
+![image-20220913073038911](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130730057.png)
+
+```java
+//        获取类对象
+        Class<?> aClass = Class.forName("com.hou.classLoaderDemo.Student");
+//        //获取类
+        Constructor<?> constructor = aClass.getConstructor(String.class, String.class, String.class, String.class);
+        Student o = (Student)constructor.newInstance("zhangsan", "18", "male", "88");
+        System.out.println(o);
+        //创建私有构造
+        Constructor<?> declaredConstructor = aClass.getDeclaredConstructor(String.class);
+        declaredConstructor.setAccessible(true);
+        Student o1 = (Student)declaredConstructor.newInstance("zhangsan");
+        System.out.println(o1);
+
+```
+
+![image-20220913075805224](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130758347.png)
+
+### 获取filed对象
+
+![image-20220913081131080](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130811225.png)
+
+```java
+        Class<Student> studentClass = Student.class;
+        Field name = studentClass.getField("name");
+        System.out.println(name);
+
+        //创建对象赋值
+        Constructor<Student> constructor = studentClass.getConstructor(String.class, String.class, String.class, String.class);
+        Student student = constructor.newInstance("zhangsan", "18", "male", "88");
+        //把对象的值修改
+        name.set(student,"sanfan");
+        //获取student中这个对象的值
+        Object o = name.get(student);
+        System.out.println(o);
+        System.out.println(student.toString());
+```
+
+### 获取method方法
+
+![image-20220913082345040](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130823180.png)
+
+![image-20220913082927115](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209130829234.png)
+
+```java
+//获取类
+Class<Student> studentClass = Student.class;
+//获取方法
+Method eat = studentClass.getMethod("eat");
+//因为要实例，所以创建一个
+Constructor<Student> constructor = studentClass.getConstructor(String.class, String.class, String.class, String.class);
+Student student = constructor.newInstance("zhangsan", "18", "male", "88");
+//运行这个方法，并有一个返回值
+Object invoke = eat.invoke(student);
+System.out.println(invoke);
+```
+
+---
+
+# 6.xml(9.15)
+
+## 6.1 xml概述
+
+![image-20220915051030760](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150510026.png)
+
+**XML 文件是由许多标签组成的，而标签名是可以自定义的。**
+
+作用：
+
+- 用于进行存储数据和传输数据
+- 作为软件的配置文件
+
+## 6.2 xml的规则
+
+### 标签规则
+
+![image-20220915051604420](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150516522.png)
+
+### 语法规则
+
+![image-20220915051849829](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150518918.png)
+
+```java
+<?xml version="1.0" encoding = "utf-8" ?>
+<!--这是注释-->
+<Students>
+    <Student id="1">
+        <name>"张三"</name>
+        <age>17</age>
+        <message>&gt;&lt;</message>
+    </Student>
+    <Student id="1">
+        <name>"张三"</name>
+        <age>17</age>
+        <message><![CDATA[你好吗，王多鱼]]></message>
+    </Student>
+</Students>
+```
+
+## 6.3 xml解析
+
+![image-20220915053621857](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150536933.png)
+
+![image-20220915053848409](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150538524.png)
+
+### 解析XML的工具
+
+![image-20220915054231439](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150542519.png)
+
+```html
+https://dom4j.github.io/
+下载到本地导入jar包
+```
+
+```java
+    public static void main(String[] args) throws DocumentException {
+        //利用xml读取数据
+        SAXReader saxReader = new SAXReader();
+        Document read = saxReader.read("logback/src/com/hou/xml/Students.xml");
+        Element rootElement = read.getRootElement();
+        List<Element> studentsElement = rootElement.elements("Student");
+
+        //创建学生数组
+        ArrayList<Student> StudentList = new ArrayList<>();
+        for(Element element : studentsElement){
+            Attribute id = element.attribute("id");
+            //获取学生id
+            String idData = id.getStringValue();
+            //获取名字年龄信息
+            Element name = element.element("name");
+            String nameData = name.getText();
+            Element age = element.element("age");
+            String ageData = age.getText();
+            Element message = element.element("message");
+            String messageData = message.getText();
+            System.out.println(nameData+ " "+idData.toString() + " " + ageData +" "+ messageData);
+            // 信息获取完毕 创建对象后添加到数组中
+            Student student1 = new Student(Integer.parseInt(idData),Integer.parseInt(ageData),nameData,messageData);
+            StudentList.add(student1);
+        }
+        //最后输出两个对象
+        System.out.println(StudentList.toString());
+    }
+}
+
+```
+
+### XML约束
+
+用来限定xml文件中可使用的标签和属性
+
+**两种约束**
+
+- DTD 约束
+
+![image-20220915064948570](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150649695.png)
+
+ ```java
+ <!ELEMENT persons (person)>
+ <!ELEMENT person (name,age)>
+ <!ELEMENT name (#PCDATA)>
+ <!ELEMENT age (#PCDATA)>
+ ```
+
+**引入dtd**
+
+```dtd
+<!DOCTYPE persons SYSTEM 'xml.dtd'>
+```
+
+**引入DTD的三种方式**
+
+- 引入本地DTD
+- 在xml文件内部引入
+- 引入网络dtd
+
+![image-20220915070524672](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150705772.png)
+
+DTD 语法规则
+
+![image-20220915070736105](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209150707240.png)
+
+![image-20220916035255705](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160353022.png)
+
+### schema 约束(9.16)
+
+1. schema约束文件也是一个xml文件，符合xml的语法，这个文件的后缀名.xsd
+
+2. 一个xml中可以引用多个schema约束文件，多个schema使用名称空间区分(名称空间类似于java包名)
+3. dtd里面元素类型的取值比较单一常见的是PCDATA类型，但是在schema里面可以指出很多个数据类型
+4. schema语法更加复杂
+
+![image-20220916040321423](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160403542.png)
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://www.itheima.com"
+        elementFormDefault="qualified"
+>
+    <!--定义persons复杂元素-->
+    <element name="persons">
+        <!--定义复杂元素-->
+        <complexType>
+            <sequence>
+                <element name="person">
+                    <complexType>
+                        <sequence>
+                            <!--定义简单元素-->
+                            <element name="name" type="string"/>
+                            <element name="age" type="string"/>
+                        </sequence>
+                    </complexType>
+                </element>
+
+            </sequence>
+        </complexType>
+    </element>
+
+</schema>
+```
+
+#### 引入方法
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<persons
+    xmlns:xls = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns = "http://www.itheima.com">
+    <!--引用约束文件的标签-->
+    <person>
+        <name>aa</name>
+        <age>19</age>
+    </person>
+
+</persons>
+```
+
+**Schema定义属性**
+
+```xml
+    <!--定义persons复杂元素-->
+    <element name="persons">
+        <!--定义复杂元素-->
+        <complexType>
+            <sequence>
+                <element name="person">
+                    <complexType>
+                        <sequence>
+                            <!--定义简单元素-->
+                            <element name="name" type="string"/>
+                            <element name="age" type="string"/>
+                        </sequence>
+                        <!--定义属性-->
+                        <attribute name="id" type="string" use="required"/>
+                    </complexType>
+                </element>
+            </sequence>
+        </complexType>
+    </element>
+```
+
+
+
+----
+
+# 7.注解
+
+## 注解的作用
+
+![image-20220916042457685](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160424762.png)
+
+
+
+## 元注解
+
+写在注解上面的注解就是元注解
+
+![image-20220916064142629](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160641840.png)
+
+```java
+@Target({ElementType.FIELD,ElementType.METHOD,ElementType.TYPE}) //注解能在哪里使用
+@Retention(RetentionPolicy.RUNTIME) // 可以存在到运行阶段
+@Inherited //指定这个注解可以被继承
+public @interface anno2 {
+}
+
+```
+
+## **单元测试**
+
+![image-20220916065401777](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160654871.png)
+
+### Junit 
+
+是一个源代代码的测试工具
+
+![image-20220916065601264](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160656328.png)
+
+运行良好是绿色，运行失败是红色
+
+### 使用基本的流程
+
+导入Junit包 4.10之后需要导入
+
+- [`junit.jar`](https://search.maven.org/search?q=g:junit AND a:junit)
+- [`hamcrest-core.jar`](https://search.maven.org/artifact/org.hamcrest/hamcrest-core/1.3/jar)
+
+![image-20220916071432888](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202209160714974.png)

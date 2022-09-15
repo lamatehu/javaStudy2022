@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<persons
+    xmlns:xls = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns = "http://www.itheima.com">
+    <!--引用约束文件的标签-->
+    <person id="1">
+        <name>aa</name>
+        <age>19</age>
+    </person>
+
+</persons>
