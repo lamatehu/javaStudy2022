@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/standest/hou-edu-student-info-manager/hou-edu-student-info-manager.iml" filepath="$PROJECT_DIR$/standest/hou-edu-student-info-manager/hou-edu-student-info-manager.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/javastudy.iml" filepath="$PROJECT_DIR$/.idea/javastudy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/jdbc-demo/jdbc-demo.iml" filepath="$PROJECT_DIR$/jdbc-demo/jdbc-demo.iml" />
       <module fileurl="file://$PROJECT_DIR$/standest/logback/logback.iml" filepath="$PROJECT_DIR$/standest/logback/logback.iml" />
       <module fileurl="file://$PROJECT_DIR$/standest/study/study.iml" filepath="$PROJECT_DIR$/standest/study/study.iml" />
     </modules>
