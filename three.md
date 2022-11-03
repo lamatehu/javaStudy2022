@@ -24,8 +24,8 @@
 | ------ | ---------- | ----- | ------ | ---------- | -------- | -------- |
 |    1    |     9.26     |   mysql   |  end  | --         |    9.26    | done   |
 | 2      | 9.27       | mysql约束   | end    | --         | 10.1 | done   |
-| 3      | 10.2       | jdbc driver | active | 10.20      |      |        |
-|        |            |             |        |            |      |        |
+| 3      | 10.2       | jdbc driver | active | 10.20      | 10.25 | done |
+| 4 | 10.23 | maven | end |            | 10.25 | done |
 |        |            |             |        |            |      |        |
 |        |            |             |        |            |      |        |
 
@@ -1177,4 +1177,177 @@ maven坐标（资源的唯一标识）
 ![image-20221025153052493](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210251530629.png)
 
 ## 3.6 依赖范围
+
+![image-20221025155340636](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210251553759.png)
+
+# 4. mybatis
+
+> 免除了几乎所有的jdbc代码
+>
+> MyBatis 是一款优秀的持久层框架，用于简化 JDBC 开发MyBatis 本是 Apache 的一个开源项目iBatis, 2010年这个项目由apache software foundation 迁移到了google code，并且改名为MyBatis 。2013年11月迁移到Github官网：https://mybatis.org/mybatis-3/zh/index.html 
+
+![image-20221025155525642](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210251555729.png)
+
+- 框架就是一个半成品软件，是一套可重用的、通用的、软件基- 
+- 础代码模型在框架的基础之上构建软件编写更加高效、规范通用、可扩展
+
+## 4.1 快速入门
+
+### 4.1.1 快速入门
+
+mapper配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="test"> // 查询名称
+    <select id="selectAll" resultType="com.hou.pojo.user">
+        select * from tb_user
+    </select>
+</mapper>
+```
+
+数据库连接配置文件`mybatis-config.xml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql:///mybatis?useSSL=false"/>
+                <property name="username" value="root"/>
+                <property name="password" value="a11816811"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="mapper.xml"/>
+    </mappers>
+</configuration>
+```
+
+日志配置文件`logback.xml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+        CONSOLE ：表示当前的日志信息是可以输出到控制台的。
+    -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%level]  %cyan([%thread]) %boldGreen(%logger{15}) - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.itheima" level="DEBUG" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+
+
+    <!--
+
+      level:用来设置打印级别，大小写无关：TRACE, DEBUG, INFO, WARN, ERROR, ALL 和 OFF
+     ， 默认debug
+      <root>可以包含零个或多个<appender-ref>元素，标识这个输出位置将会被本日志级别控制。
+      -->
+    <root level="DEBUG">
+        <appender-ref ref="Console"/>
+    </root>
+</configuration>
+```
+
+```java
+public class userSelect {
+    public static void main(String[] args) throws IOException {
+		//读取mybatis-config.xml配置文件
+        String resource = "mybatis-config.xml";
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+		//创建线程
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+		//查询test下的selectAll 配置文件为mapper.xml
+        List<user> user = sqlSession.selectList("test.selectAll");
+        System.out.println(user.toString());
+    }
+}
+```
+
+
+
+### 4.1.2 使用idea 里的数据库连接器
+
+![image-20221031053144575](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210310531419.png)
+
+![](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210310532464.png)
+
+## 4.2 Mapper 代理开发
+
+![image-20221031054432765](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210310544928.png)
+
+## 4.3 mybatis 核心配置文件
+
+![image-20221031071911174](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202210310719572.png)
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+        # 别名
+    <typeAliases>
+        <package name="com.hou.pojo"/>
+    </typeAliases>
+    <environments default="development"> //环境配置
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql:///mybatis?useSSL=false"/>
+                <property name="username" value="root"/>
+                <property name="password" value="a11816811"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers> //代理配置
+        <mapper resource="com/hou/mapper/userMapper.xml"/>
+    </mappers>
+</configuration>
+```
+
+## 4.4 查询
+
+在查询的时候，因为实体类和数据库中的字段不同，就会出现查询出错的问题，这个时候有两种方式来解决。一个是查询的时候给字段起别名，另一种是用`resultMap`来进行结果的映射
+
+```xml
+<!--数据库里的字段名称和实体类的字段名称不匹配，所以会出现null的情况
+    * 对不一样的列名起别名 可以解决这个问题
+-->
+    <select id="selectAll" resultType="com.hou.pojo.Brand">
+        select id,brand_name as brandName,company_name as companyName,ordered,description,status from tb_brand
+    </select>
+<!--这样写比较的繁琐，可以使用sql代码块的方式-->
+    <select id="selectAll" resultType="com.hou.pojo.Brand">
+	select <include refid="select"/> from tb_brand
+    </select>
+<!--也可以使用结果映射的方式-->
+<mapper namespace="com.hou.mapper.brandMapper">
+    <resultMap id="selectBrand" type="com.hou.pojo.Brand">
+        <result column="brand_name" property="brandName"/>
+        <result column="company_name" property="companyName"/>
+    </resultMap>
+    <select id="selectAll" resultMap="selectBrand">
+        select * from tb_brand
+        
+    </select>
+```
 

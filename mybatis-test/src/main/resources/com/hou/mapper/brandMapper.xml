@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--数据库里的字段名称和实体类的字段名称不匹配，所以会出现null的情况
+    * 对不一样的列名起别名 可以解决这个问题
+    <select id="selectAll" resultType="com.hou.pojo.Brand">
+        select id,brand_name as brandName,company_name as companyName,ordered,description,status from tb_brand
+    </select>
+ -->
+
+<mapper namespace="com.hou.mapper.brandMapper">
+    <sql id="select">
+        id,brand_name as brandName,company_name as companyName,ordered,description,status
+    </sql>
+    <resultMap id="selectBrand" type="com.hou.pojo.Brand">
+        <result column="brand_name" property="brandName"/>
+        <result column="company_name" property="companyName"/>
+    </resultMap>
+    <select id="selectAll" resultMap="selectBrand">
+        select <include refid="select"/> from tb_brand
+
+    </select>
+</mapper>
