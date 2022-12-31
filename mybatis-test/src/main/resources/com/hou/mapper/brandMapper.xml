@@ -21,4 +21,72 @@
         select <include refid="select"/> from tb_brand
 
     </select>
+    <select id="selectByid" resultMap="selectBrand">
+        select * from tb_brand where id = #{id}
+        <![CDATA[
+            > 1
+        ]]>
+    </select>
+    <select id="selectaa" resultMap="selectBrand">
+        select * from tb_brand where
+        status = #{status}
+        and brand_name like #{brandName}
+        and company_name like #{companyName}
+
+    </select>
+
+    <select id="selectChose" resultMap="selectBrand">
+        select * from tb_brand
+        where 1=1
+        <if test="companyName != null and companyName != '' ">
+            and company_name like #{companyName}
+        </if>
+        <if test="brandName != null and brandName != ''" >
+            and brand_name like #{brandName}
+        </if>
+        <if test="status != null">
+            and status = #{status}
+        </if>
+
+
+    </select>
+
+    <!--另一种方法-->
+    <select id="selectChoice" resultMap="selectBrand">
+        select * from tb_brand
+        <where>
+            <if test="status != null">
+              and  status = #{status}
+            </if>
+            <if test="brandName != null and brandName != '' ">
+               and brand_name like #{brandName}
+            </if>
+            <if test="companyName != null and companyName != ''">
+               and company_name like #{companyName}
+            </if>
+        </where>
+    </select>
+
+    <!--动态单个sql查询-->
+    <select id="selectConditionByChoice" resultMap="selectBrand">
+        select * from tb_brand
+        where
+        <choose>
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+            <otherwise>
+                1=1
+            </otherwise>
+        </choose>
+    </select>
+    <insert id="addOne">
+        insert into tb_brand(brand_name, company_name, ordered, description, status)
+        values(#{brandName},#{companyName},#{ordered},#{description},#{status});
+    </insert>
+
+
 </mapper>

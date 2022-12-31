@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="band@localhost" uuid="2c8b9ee5-13b2-4086-80a8-c33b9a695724">
+    <data-source source="LOCAL" name="mybatis@192.168.2.120" uuid="86ad58a5-a38d-4a25-9f40-bc67f0265f06">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
+      <remarks>ubantu</remarks>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://localhost:3306/band</jdbc-url>
+      <jdbc-url>jdbc:mysql://192.168.2.120:3306/mybatis</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
