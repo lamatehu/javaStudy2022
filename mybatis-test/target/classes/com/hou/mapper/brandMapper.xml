@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--数据库里的字段名称和实体类的字段名称不匹配，所以会出现null的情况
+    * 对不一样的列名起别名 可以解决这个问题
+    <select id="selectAll" resultType="com.hou.pojo.Brand">
+        select id,brand_name as brandName,company_name as companyName,ordered,description,status from tb_brand
+    </select>
+ -->
+
+<mapper namespace="com.hou.mapper.brandMapper">
+    <sql id="select">
+        id,brand_name as brandName,company_name as companyName,ordered,description,status
+    </sql>
+    <resultMap id="selectBrand" type="com.hou.pojo.Brand">
+        <result column="brand_name" property="brandName"/>
+        <result column="company_name" property="companyName"/>
+    </resultMap>
+    <select id="selectAll" resultMap="selectBrand">
+        select <include refid="select"/> from tb_brand
+
+    </select>
+    <select id="selectByid" resultMap="selectBrand">
+        select * from tb_brand where id = #{id}
+        <![CDATA[
+            > 1
+        ]]>
+    </select>
+    <select id="selectaa" resultMap="selectBrand">
+        select * from tb_brand where
+        status = #{status}
+        and brand_name like #{brandName}
+        and company_name like #{companyName}
+
+    </select>
+
+    <select id="selectChose" resultMap="selectBrand">
+        select * from tb_brand
+        where 1=1
+        <if test="companyName != null and companyName != '' ">
+            and company_name like #{companyName}
+        </if>
+        <if test="brandName != null and brandName != ''" >
+            and brand_name like #{brandName}
+        </if>
+        <if test="status != null">
+            and status = #{status}
+        </if>
+
+
+    </select>
+
+    <!--另一种方法-->
+    <select id="selectChoice" resultMap="selectBrand">
+        select * from tb_brand
+        <where>
+            <if test="status != null">
+              and  status = #{status}
+            </if>
+            <if test="brandName != null and brandName != '' ">
+               and brand_name like #{brandName}
+            </if>
+            <if test="companyName != null and companyName != ''">
+               and company_name like #{companyName}
+            </if>
+        </where>
+    </select>
+
+    <!--动态单个sql查询-->
+    <select id="selectConditionByChoice" resultMap="selectBrand">
+        select * from tb_brand
+        where
+        <choose>
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+            <otherwise>
+                1=1
+            </otherwise>
+        </choose>
+    </select>
+    <insert id="addOne">
+        insert into tb_brand(brand_name, company_name, ordered, description, status)
+        values(#{brandName},#{companyName},#{ordered},#{description},#{status});
+    </insert>
+
+
+</mapper>
