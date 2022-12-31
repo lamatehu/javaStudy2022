@@ -1550,3 +1550,600 @@ List<Brand> selectaa(Map map);
     }
 ```
 
+## 4.5 查询详情
+
+![image-20221107062640907](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211070626046.png)
+
+### 参数占位符
+
+*参数占位符：
+
+1.#{}：会将其替换为？，为了防止SQL注入
+
+2.${}：拼sql,会存在SQL注人问题
+
+使用时机：
+
+*参数传递的时候：#{}
+
+*表名或者列名不固定的情况下：${}会存在SQL注入问题
+
+*参数类型：parameterType：可以省略
+
+*特殊字符
+
+ 1.  转义: 	&it
+
+ 2.  CDATA区: 
+
+     ```xml
+      <![CDATA[> 1 ]]>
+     ```
+
+     
+
+```java
+//xml   
+<select id="selectByid" resultMap="selectBrand">
+        select * from tb_brand where id = #{id}
+    </select>
+//mapper
+List<Brand> selectByid(int id);
+//test
+        String resource = "mybatis-config.xml";
+        InputStream resourceAsStream = Resources.getResourceAsStream(resource);
+        //创建sql session
+        SqlSessionFactory build = new SqlSessionFactoryBuilder().build(resourceAsStream);
+
+        SqlSession sqlSession = build.openSession();
+        //开启查询
+        brandMapper mapper = sqlSession.getMapper(brandMapper.class);
+        List<Brand> brands = mapper.selectByid(2);
+
+        System.out.println(brands);
+```
+
+---
+
+## 4.6 多条件查询
+
+![image-20221108100417011](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081004687.png)
+
+
+
+```java
+//注解方法
+List<Brand> selectaa(@Param("companyName") String companyName ,@Param("brandName") String brandName,@Param("status") Integer status);
+//构造方法
+List<Brand> selectaa(Brand brand);
+//map方法
+List<Brand> selectaa(Map map);
+
+        //数据
+        String brandName = "%华为%";
+        String companyName = "%华为%";
+        HashMap<String,String> ObjectHashMap = new HashMap<String,String>();
+        ObjectHashMap.put("brandName",brandName);
+        ObjectHashMap.put("companyName",companyName);
+```
+
+### 动态sql
+
+- if 完成对应的条件判断
+- where  <where> 自动判断
+- choose(when,otherwise)
+- trim(where),
+
+用户在填写查询内容的时候，不会全部填写选项。这个时候就需要动态sql
+
+![image-20221108104353292](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081043597.png)
+
+```xml
+<select id="selectChose" resultMap="selectBrand">
+    select * from tb_brand
+    where 1=1
+    <if test="companyName != null and companyName != '' ">
+        and company_name like #{companyName}
+    </if>
+    <if test="brandName != null and brandName != ''" >
+        and brand_name like #{brandName}
+    </if>
+    <if test="status != null">
+        and status = #{status}
+    </if>
+
+
+</select>
+
+<!--另一种方法-->
+<select id="selectChoice" resultMap="selectBrand">
+    select * from tb_brand
+    <where>
+        <if test="status != null">
+          and  status = #{status}
+        </if>
+        <if test="brandName != null and brandName != '' ">
+           and brand_name like #{brandName}
+        </if>
+        <if test="companyName != null and companyName != ''">
+           and company_name like #{companyName}
+        </if>
+    </where>
+</select>
+```
+
+### 单条件的动态条件查询
+
+![image-20221108150909110](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081509460.png)
+
+```xml
+    <!--动态单个sql查询-->
+    <select id="selectConditionByChoice" resultMap="selectBrand">
+        select * from tb_brand
+        where
+        <choose>
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+            <otherwise>
+                1=1
+            </otherwise>
+        </choose>
+    </select>
+
+
+    <!--使用where 关键字 可以省略 otherwise 默认值 ，因为会自动补全-->
+    <select id="selectConditionByChoice1" resultMap="selectBrand">
+        select * from tb_brand
+        <where>
+        <choose>
+            
+                
+           
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+        </choose>
+        </where>
+    </select>
+```
+
+## 4.7 添加
+
+![image-20221108155444409](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081554697.png)
+
+添加一条数据
+
+```xml
+    <insert id="addOne">
+        insert into tb_brand(brand_name, company_name, ordered, description, status)
+        values(#{brandName},#{companyName},#{ordered},#{description},#{status});
+    </insert>
+```
+
+```java
+    @Test
+    public void addOne() throws IOException {
+        //创建session
+        InputStream resourceAsStream = Resources.getResourceAsStream("mybatis-config.xml");
+        SqlSessionFactory build = new SqlSessionFactoryBuilder().build(resourceAsStream);
+        SqlSession sqlSession = build.openSession();//这里填true就是自动提交
+        //获取mapper
+        brandMapper mapper = sqlSession.getMapper(brandMapper.class);
+        Brand brand = new Brand();
+        brand.setBrandName("小米");
+        brand.setCompanyName("小米科技");
+        brand.setDescription("为发烧而生");
+        brand.setOrdered(1);
+        brand.setStatus(1);
+        mapper.addOne(brand);
+        //手动提交，不提交则会出现rollback
+        sqlSession.commit();
+
+    }
+```
+
+## 4.5 查询详情
+
+![image-20221107062640907](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211070626046.png)
+
+### 参数占位符
+
+*参数占位符：
+
+1.#{}：会将其替换为？，为了防止SQL注入
+
+2.${}：拼sql,会存在SQL注人问题
+
+使用时机：
+
+*参数传递的时候：#{}
+
+*表名或者列名不固定的情况下：${}会存在SQL注入问题
+
+*参数类型：parameterType：可以省略
+
+*特殊字符
+
+ 1.  转义: 	&it
+
+ 2.  CDATA区: 
+
+     ```xml
+      <![CDATA[> 1 ]]>
+     ```
+
+     
+
+```java
+//xml   
+<select id="selectByid" resultMap="selectBrand">
+        select * from tb_brand where id = #{id}
+    </select>
+//mapper
+List<Brand> selectByid(int id);
+//test
+        String resource = "mybatis-config.xml";
+        InputStream resourceAsStream = Resources.getResourceAsStream(resource);
+        //创建sql session
+        SqlSessionFactory build = new SqlSessionFactoryBuilder().build(resourceAsStream);
+
+        SqlSession sqlSession = build.openSession();
+        //开启查询
+        brandMapper mapper = sqlSession.getMapper(brandMapper.class);
+        List<Brand> brands = mapper.selectByid(2);
+
+        System.out.println(brands);
+```
+
+---
+
+## 4.6 多条件查询
+
+![image-20221108100417011](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081004687.png)
+
+
+
+```java
+//注解方法
+List<Brand> selectaa(@Param("companyName") String companyName ,@Param("brandName") String brandName,@Param("status") Integer status);
+//构造方法
+List<Brand> selectaa(Brand brand);
+//map方法
+List<Brand> selectaa(Map map);
+
+        //数据
+        String brandName = "%华为%";
+        String companyName = "%华为%";
+        HashMap<String,String> ObjectHashMap = new HashMap<String,String>();
+        ObjectHashMap.put("brandName",brandName);
+        ObjectHashMap.put("companyName",companyName);
+```
+
+### 动态sql
+
+- if 完成对应的条件判断
+- where  <where> 自动判断
+- choose(when,otherwise)
+- trim(where),
+
+用户在填写查询内容的时候，不会全部填写选项。这个时候就需要动态sql
+
+![image-20221108104353292](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081043597.png)
+
+```xml
+<select id="selectChose" resultMap="selectBrand">
+    select * from tb_brand
+    where 1=1
+    <if test="companyName != null and companyName != '' ">
+        and company_name like #{companyName}
+    </if>
+    <if test="brandName != null and brandName != ''" >
+        and brand_name like #{brandName}
+    </if>
+    <if test="status != null">
+        and status = #{status}
+    </if>
+
+
+</select>
+
+<!--另一种方法-->
+<select id="selectChoice" resultMap="selectBrand">
+    select * from tb_brand
+    <where>
+        <if test="status != null">
+          and  status = #{status}
+        </if>
+        <if test="brandName != null and brandName != '' ">
+           and brand_name like #{brandName}
+        </if>
+        <if test="companyName != null and companyName != ''">
+           and company_name like #{companyName}
+        </if>
+    </where>
+</select>
+```
+
+### 单条件的动态条件查询
+
+![image-20221108150909110](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081509460.png)
+
+```xml
+    <!--动态单个sql查询-->
+    <select id="selectConditionByChoice" resultMap="selectBrand">
+        select * from tb_brand
+        where
+        <choose>
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+            <otherwise>
+                1=1
+            </otherwise>
+        </choose>
+    </select>
+
+
+    <!--使用where 关键字 可以省略 otherwise 默认值 ，因为会自动补全-->
+    <select id="selectConditionByChoice1" resultMap="selectBrand">
+        select * from tb_brand
+        <where>
+        <choose>
+            
+                
+           
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+        </choose>
+        </where>
+    </select>
+```
+
+## 4.7 添加
+
+![image-20221108155444409](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081554697.png)
+
+添加一条数据
+
+```xml
+    <insert id="addOne">
+        insert into tb_brand(brand_name, company_name, ordered, description, status)
+        values(#{brandName},#{companyName},#{ordered},#{description},#{status});
+    </insert>
+```
+
+```java
+    @Test
+    public void addOne() throws IOException {
+        //创建session
+        InputStream resourceAsStream = Resources.getResourceAsStream("mybatis-config.xml");
+        SqlSessionFactory build = new SqlSessionFactoryBuilder().build(resourceAsStream);
+        SqlSession sqlSession = build.openSession();//这里填true就是自动提交
+        //获取mapper
+        brandMapper mapper = sqlSession.getMapper(brandMapper.class);
+        Brand brand = new Brand();
+        brand.setBrandName("小米");
+        brand.setCompanyName("小米科技");
+        brand.setDescription("为发烧而生");
+        brand.setOrdered(1);
+        brand.setStatus(1);
+        mapper.addOne(brand);
+        //手动提交，不提交则会出现rollback
+        sqlSession.commit();
+
+    }
+```
+
+## 4.5 查询详情
+
+![image-20221107062640907](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211070626046.png)
+
+### 参数占位符
+
+*参数占位符：
+
+1.#{}：会将其替换为？，为了防止SQL注入
+
+2.${}：拼sql,会存在SQL注人问题
+
+使用时机：
+
+*参数传递的时候：#{}
+
+*表名或者列名不固定的情况下：${}会存在SQL注入问题
+
+*参数类型：parameterType：可以省略
+
+*特殊字符
+
+ 1.  转义: 	&it
+
+ 2.  CDATA区: 
+
+     ```xml
+      <![CDATA[> 1 ]]>
+     ```
+
+     
+
+```java
+//xml   
+<select id="selectByid" resultMap="selectBrand">
+        select * from tb_brand where id = #{id}
+    </select>
+//mapper
+List<Brand> selectByid(int id);
+//test
+        String resource = "mybatis-config.xml";
+        InputStream resourceAsStream = Resources.getResourceAsStream(resource);
+        //创建sql session
+        SqlSessionFactory build = new SqlSessionFactoryBuilder().build(resourceAsStream);
+
+        SqlSession sqlSession = build.openSession();
+        //开启查询
+        brandMapper mapper = sqlSession.getMapper(brandMapper.class);
+        List<Brand> brands = mapper.selectByid(2);
+
+        System.out.println(brands);
+```
+
+---
+
+## 4.6 多条件查询
+
+![image-20221108100417011](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081004687.png)
+
+
+
+```java
+//注解方法
+List<Brand> selectaa(@Param("companyName") String companyName ,@Param("brandName") String brandName,@Param("status") Integer status);
+//构造方法
+List<Brand> selectaa(Brand brand);
+//map方法
+List<Brand> selectaa(Map map);
+
+        //数据
+        String brandName = "%华为%";
+        String companyName = "%华为%";
+        HashMap<String,String> ObjectHashMap = new HashMap<String,String>();
+        ObjectHashMap.put("brandName",brandName);
+        ObjectHashMap.put("companyName",companyName);
+```
+
+### 动态sql
+
+- if 完成对应的条件判断
+- where  <where> 自动判断
+- choose(when,otherwise)
+- trim(where),
+
+用户在填写查询内容的时候，不会全部填写选项。这个时候就需要动态sql
+
+![image-20221108104353292](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081043597.png)
+
+```xml
+<select id="selectChose" resultMap="selectBrand">
+    select * from tb_brand
+    where 1=1
+    <if test="companyName != null and companyName != '' ">
+        and company_name like #{companyName}
+    </if>
+    <if test="brandName != null and brandName != ''" >
+        and brand_name like #{brandName}
+    </if>
+    <if test="status != null">
+        and status = #{status}
+    </if>
+
+
+</select>
+
+<!--另一种方法-->
+<select id="selectChoice" resultMap="selectBrand">
+    select * from tb_brand
+    <where>
+        <if test="status != null">
+          and  status = #{status}
+        </if>
+        <if test="brandName != null and brandName != '' ">
+           and brand_name like #{brandName}
+        </if>
+        <if test="companyName != null and companyName != ''">
+           and company_name like #{companyName}
+        </if>
+    </where>
+</select>
+```
+
+### 单条件的动态条件查询
+
+![image-20221108150909110](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081509460.png)
+
+```xml
+    <!--动态单个sql查询-->
+    <select id="selectConditionByChoice" resultMap="selectBrand">
+        select * from tb_brand
+        where
+        <choose>
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+            <otherwise>
+                1=1
+            </otherwise>
+        </choose>
+    </select>
+
+
+    <!--使用where 关键字 可以省略 otherwise 默认值 ，因为会自动补全-->
+    <select id="selectConditionByChoice1" resultMap="selectBrand">
+        select * from tb_brand
+        <where>
+        <choose>
+            
+                
+           
+            <when test="companyName != null and companyName != ''">
+                company_name like #{companyName}
+            </when>
+            <when test="brandName != null and brandName != ''">
+                brandName like #{brandName}
+            </when>
+        </choose>
+        </where>
+    </select>
+```
+
+## 4.7 添加
+
+![image-20221108155444409](https://cdn.jsdelivr.net/gh/lamatehu/lamateimg//img/202211081554697.png)
+
+添加一条数据
+
+```xml
+    <insert id="addOne">
+        insert into tb_brand(brand_name, company_name, ordered, description, status)
+        values(#{brandName},#{companyName},#{ordered},#{description},#{status});
+    </insert>
+```
+
+```java
+    @Test
+    public void addOne() throws IOException {
+        //创建session
+        InputStream resourceAsStream = Resources.getResourceAsStream("mybatis-config.xml");
+        SqlSessionFactory build = new SqlSessionFactoryBuilder().build(resourceAsStream);
+        SqlSession sqlSession = build.openSession();//这里填true就是自动提交
+        //获取mapper
+        brandMapper mapper = sqlSession.getMapper(brandMapper.class);
+        Brand brand = new Brand();
+        brand.setBrandName("小米");
+        brand.setCompanyName("小米科技");
+        brand.setDescription("为发烧而生");
+        brand.setOrdered(1);
+        brand.setStatus(1);
+        mapper.addOne(brand);
+        //手动提交，不提交则会出现rollback
+        sqlSession.commit();
+
+    }
+```
+
