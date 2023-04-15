@@ -1,0 +1,54 @@
+    /**
+     * referce 解码
+     *
+     * @param map   传入的编码表
+     * @param bytes 需要解码的huffman表
+     * @return {@link byte[]} 返回的是一个解码完成的byte
+     */
+//    private static byte[] referce(Map<String,String> map,byte[] bytes){
+//        StringBuilder stringBuilder = new StringBuilder();
+//        for (int i=0;i<bytes.length;i++) {
+//            boolean flag = (i==bytes.length-1);
+//            stringBuilder.append(decodeHuffmanBytes(bytes[i],!flag));
+//        }
+//
+//
+//
+//
+//        //对编码表进行取反,使用的是新创建一个map的方法
+//        HashMap<String, String> newMap = new HashMap<>();
+//        map.forEach((key,value)->{
+//            newMap.put(value,key);
+//
+//        });
+//
+//        //开始根据编码表反向查找文本内容
+//        List<Byte> bytes2 = new ArrayList<>();
+//        for (int i=0;i<stringBuilder.length();){
+//            boolean flag = true;
+//            int count =0;
+//            while (flag) {
+//
+//                String st = stringBuilder.substring(i, i+count);
+//                String s1 = newMap.get(st);
+//                if (s1 == null){
+//                    count++;
+//                }else {
+//                    flag = false;
+//                    i = i+count;
+//                    count = 0;
+//
+//                    bytes2.add(Byte.valueOf(s1));
+//                }
+//
+//            }
+//        }
+//        byte[] bytes1 = new byte[bytes2.size()];
+//        int i= 0;
+//        for (Byte aByte : bytes2) {
+//            bytes1[i] = bytes2.get(i);
+//            i++;
+//        }
+//
+//        return bytes1;
+//    }
